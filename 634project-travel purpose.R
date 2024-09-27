@@ -47,41 +47,7 @@ writeData(wb, sheet = "Filtered_Data", combined_data)
 saveWorkbook(wb, output_file, overwrite = TRUE)
 print(head(filtered_data, 10))
 
-
-# Ensure year columns are numeric
-combined_data <- combined_data %>%
-  mutate(across(c("2020", "2021", "2022", "2023", "2024"), ~ as.numeric(as.character(.))))
-
-# Monthly Travel Purpose Trends by Year
-combined_data$Month <- factor(combined_data$Month, levels = sheet_names)
-long_data <- combined_data %>%
-  pivot_longer(cols = c("2020", "2021", "2022", "2023", "2024"), names_to = "Year", values_to = "Value")
-ggplot(long_data, aes(x = Month, y = Value, color = Year, group = Year)) +
-  geom_line() +
-  facet_wrap(~ `Travel purpose`, scales = "free_y") +
-  labs(title = "Monthly Travel Purpose Trends by Year", 
-       x = "Month", 
-       y = "Number of Visitors", 
-       color = "Year") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_y_continuous(labels = comma)
-
-# 'Holiday' vs Other Travel Purposes by Year and Month
-ggplot(long_data, aes(x = Month, y = Value, color = `Travel purpose`, group = interaction(Year, `Travel purpose`))) +
-  geom_line(aes(linetype = ifelse(`Travel purpose` == "Holiday", "solid", "dashed")), size = 0.8) +
-  scale_color_manual(values = c("Holiday" = "red", "Business" = "blue", "Conferences & conventions" = "green",
-                                "Visiting friends & relatives" = "purple", "Education" = "orange")) +
-  facet_wrap(~ Year, scales = "free_y") +
-  labs(title = "Holiday vs Other Travel Purposes by Year and Month", 
-       x = "Month", 
-       y = "Number of Visitors", 
-       color = "Travel Purpose") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_y_continuous(labels = comma) 
-
-#Comparison of Travel Purposes Across Years by Year Ended July
+#Comparison of Travel Purposes Across Years by Year Ended July, 2020-2024
 # Clean and analyze data from "Year Ended July" like before
 year_ended_july <- "7.xlsx"
 new_file <- "year_ended_july_new.xlsx"
@@ -104,13 +70,46 @@ long_data <- pivot_longer(ended_year_july, cols = c("2020", "2021", "2022", "202
 ggplot(long_data, aes(x = Year, y = Value, color = `Travel purpose`, group = `Travel purpose`)) +
   geom_line(size = 0.8) +
   geom_point() +
-  labs(title = "Comparison of Travel Purposes Across Years by Year Ended July", 
+  labs(title = "Comparison of Travel Purposes Across Years by Year Ended July, 2020-2024", 
        x = "Year", 
        y = "Number of Visitors", 
        color = "Travel Purpose") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_y_continuous(labels = comma) 
+
+# Monthly Holiday purpose from May 2022 to June 2024
+holiday_data <- combined_data %>%
+  filter(`Travel purpose` == "Holiday")
+holiday_data <- holiday_data %>%
+  mutate(across(c("2020", "2021", "2022", "2023", "2024"), 
+                ~ as.numeric(as.character(.))))
+holiday_data_long <- holiday_data %>%
+  pivot_longer(cols = c("2020", "2021", "2022", "2023", "2024"), 
+               names_to = "Year", 
+               values_to = "Value")
+holiday_data_long <- holiday_data_long %>%
+  mutate(Year = as.numeric(Year))
+
+# Adjust the filter to include all of 2022 (starting from January)
+monthly_period_data <- holiday_data_long %>%
+  filter(
+    (Year == 2022 & Month %in% c("January", "February", "March", "April", "May", 
+                                 "June", "July", "August", "September", "October", "November", "December")) |
+      (Year == 2023) |
+      (Year == 2024 & Month %in% c("January", "February", "March", "April", "May", "June"))
+  )
+
+# Monthly Holiday purpose from May 2022 to June 2024
+ggplot(monthly_period_data, aes(x = Month, y = Value, color = factor(Year), group = Year)) +
+  geom_line(size = 1) +
+  labs(title = "Monthly Holiday purpose from May 2022 to June 20244", 
+       x = "Month", 
+       y = "Number of Visitors",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::comma)
 
 
 # 2019-2023, clean data like before
