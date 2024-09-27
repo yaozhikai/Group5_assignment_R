@@ -111,3 +111,116 @@ ggplot(long_data, aes(x = Year, y = Value, color = `Travel purpose`, group = `Tr
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_y_continuous(labels = comma) 
+
+
+# 2019-2023, clean data like before
+monthly_list_23 <- paste0(1:12, "-2023.xlsx")
+all_tables <- lapply(monthly_list_23, function(file) {
+  read_excel(file, sheet = "Table 5")
+})
+
+sheet_names <- c("January", "February", "March", "April", "May", "June", 
+                 "July", "August", "September", "October", "November", "December")
+output_file <- "table_5_2023.xlsx" 
+wb <- createWorkbook()
+
+for (i in seq_along(all_tables)) {
+  addWorksheet(wb, sheet_names[i])
+  writeData(wb, sheet = sheet_names[i], all_tables[[i]])
+}
+saveWorkbook(wb, output_file, overwrite = TRUE)
+
+all_data <- lapply(seq_along(sheet_names), function(i) {
+  table_5 <- read.xlsx(output_file, sheet = sheet_names[i])
+  filtered_rows <- table_5[7:11, -1]
+  filtered_rows <- cbind(Month = sheet_names[i], filtered_rows)
+  filtered_rows <- filtered_rows[, -c(ncol(filtered_rows)-1, ncol(filtered_rows))]
+  filtered_rows
+})
+
+combined_data <- do.call(rbind, all_data)
+
+colnames(combined_data)[2:7] <- c("Travel purpose", "2019", "2020", "2021", "2022", "2023")
+
+addWorksheet(wb, "Filtered_Data")
+writeData(wb, sheet = "Filtered_Data", combined_data)
+saveWorkbook(wb, output_file, overwrite = TRUE)
+
+combined_data <- combined_data %>%
+  mutate(across(c("2019", "2020", "2021", "2022", "2023"), ~ as.numeric(as.character(.))))
+
+# Monthly Travel Purpose Trends by Year 2019-2023
+combined_data$Month <- factor(combined_data$Month, levels = sheet_names)
+long_data <- combined_data %>%
+  pivot_longer(cols = c("2019", "2020", "2021", "2022", "2023"), names_to = "Year", values_to = "Value")
+ggplot(long_data, aes(x = Month, y = Value, color = Year, group = Year)) +
+  geom_line() +
+  facet_wrap(~ `Travel purpose`, scales = "free_y") +
+  labs(title = "Monthly Travel Purpose Trends by Year 2019-2023", 
+       x = "Month", 
+       y = "Number of Visitors", 
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+
+# Holiday vs Other Travel Purposes by Year and Month, 2019-2023
+ggplot(long_data, aes(x = Month, y = Value, color = `Travel purpose`, group = interaction(Year, `Travel purpose`))) +
+  geom_line(aes(linetype = ifelse(`Travel purpose` == "Holiday", "solid", "dashed")), size = 0.8) +
+  scale_color_manual(values = c("Holiday" = "red", "Business" = "blue", "Conferences & conventions" = "green",
+                                "Visiting friends & relatives" = "purple", "Education" = "orange")) +
+  facet_wrap(~ Year, scales = "free_y") +
+  labs(title = "Holiday vs Other Travel Purposes by Year and Month, 2019-2023", 
+       x = "Month", 
+       y = "Number of Visitors", 
+       color = "Travel Purpose") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+
+# Add a season column and divide the seasons based on the month
+combined_data <- combined_data %>%
+  mutate(Season = case_when(
+    Month %in% c("December", "January", "February") ~ "Winter",
+    Month %in% c("March", "April", "May") ~ "Spring",
+    Month %in% c("June", "July", "August") ~ "Summer",
+    Month %in% c("September", "October", "November") ~ "Autumn"
+  ))
+
+# new sheet call "Seasonal"
+addWorksheet(wb, "Seasonal")
+writeData(wb, sheet = "Seasonal", combined_data)
+saveWorkbook(wb, output_file, overwrite = TRUE)
+combined_data <- combined_data %>%
+  mutate(across(c("2019", "2020", "2021", "2022", "2023"), ~ as.numeric(as.character(.))))
+
+# graph
+long_data <- combined_data %>%
+  pivot_longer(cols = c("2019", "2020", "2021", "2022", "2023"), names_to = "Year", values_to = "Value")
+
+# Seasonal Travel Purpose Trends by Year,2019-2023
+ggplot(long_data, aes(x = Season, y = Value, color = Year, group = Year)) +
+  geom_line() +
+  facet_wrap(~ `Travel purpose`, scales = "free_y") +
+  labs(title = "Seasonal Travel Purpose Trends by Year, 2019-2023", 
+       x = "Season", 
+       y = "Number of Visitors", 
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+
+# Holiday vs Other Travel Purposes by Season and Year, 2019-2023
+ggplot(long_data, aes(x = Season, y = Value, color = `Travel purpose`, group = interaction(Year, `Travel purpose`))) +
+  geom_line(aes(linetype = ifelse(`Travel purpose` == "Holiday", "solid", "dashed")), size = 0.8) +
+  scale_color_manual(values = c("Holiday" = "red", "Business" = "blue", "Conferences & conventions" = "green",
+                                "Visiting friends & relatives" = "purple", "Education" = "orange")) +
+  facet_wrap(~ Year, scales = "free_y") +
+  labs(title = "Holiday vs Other Travel Purposes by Season and Year, 2019-2023", 
+       x = "Season", 
+       y = "Number of Visitors", 
+       color = "Travel Purpose") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+
