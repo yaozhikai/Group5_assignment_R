@@ -223,4 +223,3 @@ ggplot(long_data, aes(x = Season, y = Value, color = `Travel purpose`, group = i
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_y_continuous(labels = comma)
-
