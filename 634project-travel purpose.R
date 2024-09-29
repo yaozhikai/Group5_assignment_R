@@ -193,32 +193,35 @@ saveWorkbook(wb, output_file, overwrite = TRUE)
 combined_data <- combined_data %>%
   mutate(across(c("2019", "2020", "2021", "2022", "2023"), ~ as.numeric(as.character(.))))
 
+
+
+#change to bar chat here
 # graph
 long_data <- combined_data %>%
   pivot_longer(cols = c("2019", "2020", "2021", "2022", "2023"), names_to = "Year", values_to = "Value")
 
-# Seasonal Travel Purpose Trends by Year,2019-2023
-ggplot(long_data, aes(x = Season, y = Value, color = Year, group = Year)) +
-  geom_line() +
+# Bar Chart for Seasonal Travel Purpose Trends by Year, 2019-2023
+ggplot(long_data, aes(x = Season, y = Value, fill = Year)) +
+  geom_bar(stat = "identity", position = "dodge") +
   facet_wrap(~ `Travel purpose`, scales = "free_y") +
   labs(title = "Seasonal Travel Purpose Trends by Year, 2019-2023", 
        x = "Season", 
        y = "Number of Visitors", 
-       color = "Year") +
+       fill = "Year") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_y_continuous(labels = comma)
+  scale_y_continuous(labels = scales::comma)
 
-# Holiday vs Other Travel Purposes by Season and Year, 2019-2023
-ggplot(long_data, aes(x = Season, y = Value, color = `Travel purpose`, group = interaction(Year, `Travel purpose`))) +
-  geom_line(aes(linetype = ifelse(`Travel purpose` == "Holiday", "solid", "dashed")), size = 0.8) +
-  scale_color_manual(values = c("Holiday" = "red", "Business" = "blue", "Conferences & conventions" = "green",
-                                "Visiting friends & relatives" = "purple", "Education" = "orange")) +
+# Bar Chart for Holiday vs Other Travel Purposes by Season and Year, 2019-2023
+ggplot(long_data, aes(x = Season, y = Value, fill = `Travel purpose`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("Holiday" = "red", "Business" = "blue", "Conferences & conventions" = "green",
+                               "Visiting friends & relatives" = "purple", "Education" = "orange")) +
   facet_wrap(~ Year, scales = "free_y") +
   labs(title = "Holiday vs Other Travel Purposes by Season and Year, 2019-2023", 
        x = "Season", 
        y = "Number of Visitors", 
-       color = "Travel Purpose") +
+       fill = "Travel Purpose") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_y_continuous(labels = comma)
+  scale_y_continuous(labels = scales::comma)
